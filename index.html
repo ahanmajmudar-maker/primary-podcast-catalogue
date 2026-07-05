@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANZCA Primary — LO Group Podcast Finder</title>
+<style>
+  :root{
+    --ink:#12303a;
+    --ink-soft:#274a54;
+    --paper:#f6f8f6;
+    --card:#ffffff;
+    --accent:#0e7c86;      /* monitor teal */
+    --accent-ink:#0a5b62;
+    --flag:#c9781f;        /* amber: high yield */
+    --line:#dbe4e1;
+    --line-soft:#eaefec;
+    --text:#182a2f;
+    --muted:#5d7178;
+    --chip:#eef4f2;
+    --shadow:0 1px 2px rgba(18,48,58,.06),0 8px 24px rgba(18,48,58,.05);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--paper);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  code,.mono{font-family:"SF Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace}
+
+  /* ---------- header ---------- */
+  header{
+    background:
+      radial-gradient(120% 140% at 90% -20%, rgba(14,124,134,.35), transparent 60%),
+      linear-gradient(180deg,var(--ink),var(--ink-soft));
+    color:#eaf3f2;padding:34px 20px 26px;
+  }
+  .wrap{max-width:1120px;margin:0 auto}
+  .eyebrow{
+    font-family:"SF Mono",ui-monospace,monospace;font-size:12px;letter-spacing:.18em;
+    text-transform:uppercase;color:#8fd0d3;margin:0 0 10px;
+  }
+  h1{
+    font-family:Georgia,"Times New Roman",serif;font-weight:600;
+    font-size:clamp(26px,4.4vw,42px);line-height:1.08;margin:0 0 10px;letter-spacing:-.01em;
+  }
+  header p{margin:0;max-width:66ch;color:#c3dbdb;font-size:15px}
+  header .pulse{height:2px;width:100%;margin-top:22px;
+    background:linear-gradient(90deg,transparent,var(--accent) 12%,#7fd3d8 50%,var(--accent) 88%,transparent);
+    opacity:.7;border-radius:2px}
+
+  /* ---------- controls ---------- */
+  .controls{position:sticky;top:0;z-index:20;background:rgba(246,248,246,.92);
+    backdrop-filter:saturate(140%) blur(8px);border-bottom:1px solid var(--line);
+    padding:14px 20px}
+  .controls .wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .search{flex:1 1 280px;position:relative}
+  .search input{
+    width:100%;padding:12px 14px 12px 40px;border:1px solid var(--line);border-radius:10px;
+    background:#fff;font-size:15px;color:var(--text)}
+  .search input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--muted)}
+  .filters{display:flex;gap:6px;flex-wrap:wrap}
+  .filters button{
+    font:inherit;font-size:13px;padding:8px 12px;border-radius:999px;cursor:pointer;
+    border:1px solid var(--line);background:#fff;color:var(--ink-soft);transition:.12s}
+  .filters button:hover{border-color:var(--accent)}
+  .filters button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .count{font-size:13px;color:var(--muted);white-space:nowrap}
+
+  /* ---------- legend ---------- */
+  .legend{max-width:1120px;margin:16px auto 0;padding:0 20px;font-size:12.5px;color:var(--muted);
+    display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .legend .verified{background:var(--accent)}
+  .legend .flag{background:var(--flag)}
+
+  /* ---------- grid ---------- */
+  main{max-width:1120px;margin:0 auto;padding:22px 20px 80px}
+  .cat{margin:30px 0 12px}
+  .cat h2{font-family:Georgia,serif;font-size:20px;margin:0;color:var(--ink);
+    display:flex;align-items:baseline;gap:10px}
+  .cat h2 .n{font-family:"SF Mono",monospace;font-size:12px;color:var(--accent-ink);
+    background:var(--chip);padding:3px 8px;border-radius:6px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;margin-top:14px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px 14px;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--line)}
+  .card.hi::before{background:var(--flag)}
+  .card.seed::before{background:var(--accent)}
+  .card h3{font-size:16px;margin:0 0 8px;color:var(--ink);letter-spacing:-.01em;padding-left:6px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;padding-left:6px}
+  .lo{font-family:"SF Mono",monospace;font-size:11px;color:var(--accent-ink);
+    background:var(--chip);border:1px solid var(--line-soft);padding:2px 7px;border-radius:6px}
+  .mcq{font-family:"SF Mono",monospace;font-size:11px;color:#7a5312;background:#fbf1e2;
+    border:1px solid #f0dcbe;padding:2px 7px;border-radius:6px}
+  .focus{font-size:13px;color:var(--muted);margin:0 0 12px;padding-left:6px}
+
+  .eps{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:1px}
+  .eps li{padding-left:6px}
+  .ep{display:flex;gap:9px;align-items:flex-start;text-decoration:none;color:var(--text);
+    padding:7px 8px;border-radius:8px;transition:.12s;margin-left:-8px}
+  .ep:hover{background:var(--line-soft)}
+  .ep .play{flex:none;width:18px;height:18px;margin-top:1px;color:var(--accent)}
+  .ep .body{min-width:0}
+  .ep .t{font-size:13.5px;line-height:1.35;color:var(--ink)}
+  .ep .s{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .none{font-size:12.5px;color:var(--muted);font-style:italic;padding:2px 0 12px 6px}
+
+  .actions{margin-top:auto;padding-top:12px;border-top:1px dashed var(--line);padding-left:6px}
+  .actions .row1{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .go{display:inline-flex;align-items:center;gap:7px;background:var(--accent);color:#fff;
+    text-decoration:none;font-size:13px;font-weight:600;padding:8px 12px;border-radius:9px;transition:.12s}
+  .go:hover{background:var(--accent-ink)}
+  .shows{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px}
+  .shows a{font-size:11px;text-decoration:none;color:var(--ink-soft);background:#fff;
+    border:1px solid var(--line);padding:4px 8px;border-radius:999px;transition:.12s}
+  .shows a:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .shows .lbl{font-size:10.5px;color:var(--muted);align-self:center;margin-right:1px;
+    text-transform:uppercase;letter-spacing:.08em}
+
+  .eps li{position:relative;display:flex;align-items:flex-start}
+  .rm{flex:none;margin:6px 2px 0 4px;width:20px;height:20px;line-height:16px;border-radius:6px;
+    border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;font-size:15px}
+  .rm:hover{border-color:#c94b3b;color:#c94b3b}
+  .mine{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    color:#0a5b62;background:#dff0ef;border-radius:4px;padding:1px 5px}
+  .add-toggle{font:inherit;font-size:12.5px;color:var(--accent-ink);background:#fff;border:1px dashed var(--line);
+    border-radius:9px;padding:8px 11px;cursor:pointer}
+  .add-toggle:hover{border-color:var(--accent);border-style:solid}
+  .addbox{margin-top:10px;display:flex;flex-direction:column;gap:6px;background:#fbfdfc;border:1px solid var(--line-soft);
+    border-radius:10px;padding:10px}
+  .addbox input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px}
+  .addbox input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .addrow{display:flex;align-items:center;gap:10px}
+  .add-save{font:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--accent);border:none;
+    border-radius:8px;padding:8px 14px;cursor:pointer}
+  .add-save:hover{background:var(--accent-ink)}
+  .add-msg{font-size:12px;color:#c94b3b}
+  .add-grouplbl{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .add-group{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:#fff;color:var(--text)}
+  .add-group:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  #savebar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:10px 18px;background:rgba(18,48,58,.96);backdrop-filter:blur(8px);color:#dbeceb;
+    box-shadow:0 -6px 20px rgba(18,48,58,.18)}
+  #savebar.unsaved{background:rgba(12,90,98,.97)}
+  #save-count{font-size:13px}
+  #save-file{font:inherit;font-size:13.5px;font-weight:700;color:#0a5b62;background:#eafaf8;border:none;
+    border-radius:9px;padding:9px 16px;cursor:pointer;white-space:nowrap}
+  #save-file:hover{background:#fff}
+  main{padding-bottom:96px !important}
+  .add-open{font:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--accent);border:none;
+    border-radius:999px;padding:9px 15px;cursor:pointer;white-space:nowrap}
+  .add-open:hover{background:var(--accent-ink)}
+  /* bottom-sheet modal (iOS-style) */
+  #add-modal{position:fixed;inset:0;z-index:60}
+  #add-modal[hidden]{display:none}
+  .sheet-backdrop{position:absolute;inset:0;background:rgba(18,48,58,.45);opacity:0;transition:opacity .22s ease}
+  #add-modal.show .sheet-backdrop{opacity:1}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;
+    padding:10px 18px calc(20px + env(safe-area-inset-bottom)) 18px;box-shadow:0 -10px 40px rgba(18,48,58,.25);
+    transform:translateY(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);max-width:640px;margin:0 auto}
+  #add-modal.show .sheet{transform:translateY(0)}
+  .sheet-grip{width:40px;height:5px;border-radius:3px;background:var(--line);margin:6px auto 12px}
+  .sheet-title{font-family:Georgia,serif;font-size:19px;margin:0 0 14px;color:var(--ink)}
+  .fld{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+  .fld input,.fld select{display:block;width:100%;margin-top:5px;padding:13px 12px;border:1px solid var(--line);
+    border-radius:11px;font:inherit;font-size:16px;background:#fff;color:var(--text)}
+  .fld input:focus,.fld select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .sheet-actions{display:flex;gap:10px;margin-top:6px}
+  .sheet-actions .ghost{flex:1;font:inherit;font-size:15px;color:var(--ink-soft);background:#fff;border:1px solid var(--line);
+    border-radius:11px;padding:13px;cursor:pointer}
+  #ga-save{flex:2;font:inherit;font-size:15px;font-weight:700;color:#fff;background:var(--accent);border:none;
+    border-radius:11px;padding:13px;cursor:pointer}
+  #ga-save:hover{background:var(--accent-ink)}
+  .card.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:var(--shadow)}}
+  .empty{text-align:center;color:var(--muted);padding:60px 20px;display:none}
+  footer{max-width:1120px;margin:0 auto;padding:0 20px 60px;color:var(--muted);font-size:12.5px;line-height:1.6}
+  footer a{color:var(--accent-ink)}
+  footer .fnote{border-top:1px solid var(--line);padding-top:18px;max-width:80ch}
+
+  @media (max-width:520px){
+    .grid{grid-template-columns:1fr}
+    .controls{padding:12px 14px}
+    main{padding:18px 14px 60px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <p class="eyebrow">ANZCA Primary Exam · Study Utility</p>
+    <h1>Learning Outcome Groups → Podcast Finder</h1>
+    <p>Every LO Group from <em>A Primer for the Primary</em>, mapped to podcast episodes from the shows you follow.</p>
+    <div class="pulse"></div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="wrap">
+    <div class="search">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input id="q" type="search" placeholder="Search groups, LO codes (e.g. BT_PO 1.79), or topics…" autocomplete="off">
+    </div>
+    <div class="filters" id="filters"></div>
+    <button id="add-open" class="add-open">＋ Add episode</button>
+    <span class="count" id="count"></span>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="dot verified"></span>Has mapped episode(s)</span>
+  <span>Search an <strong>LO code</strong> (e.g. BT_PO 1.73) to find its group — ranges are matched.</span>
+  <span>Tip: <strong>＋ Add episode</strong> to file it in any group, then <strong>Save file</strong> to keep it.</span>
+</div>
+
+<main>
+  <div id="board"></div>
+  <div class="empty" id="empty">No groups match that search. Try a broader term or clear the filter.</div>
+</main>
+
+<div id="add-modal" hidden>
+  <div class="sheet-backdrop" id="sheet-backdrop"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Add episode">
+    <div class="sheet-grip"></div>
+    <h2 class="sheet-title">Add episode</h2>
+    <label class="fld">Episode title
+      <input id="ga-title" type="text" placeholder="e.g. Renal blood flow deep-dive" autocomplete="off">
+    </label>
+    <label class="fld">Spotify link
+      <input id="ga-url" type="url" inputmode="url" placeholder="https://open.spotify.com/episode/…" autocomplete="off">
+    </label>
+    <label class="fld">LO Group
+      <select id="ga-group"></select>
+    </label>
+    <div id="ga-msg" class="add-msg"></div>
+    <div class="sheet-actions">
+      <button id="ga-cancel" class="ghost">Cancel</button>
+      <button id="ga-save">Add episode</button>
+    </div>
+  </div>
+</div>
+
+<div id="savebar">
+  <span id="save-count">No added episodes yet</span>
+  <button id="save-file">⬇ Save file</button>
+</div>
+
+<footer>
+  <div class="fnote">
+    <p><strong>How this was built.</strong> Preferred shows searched first (Count to 10, Anaesthesia Coffee Break, Anaestheasier, ICU Primary PrepCast, ACCRAC, ANZCA Part 1 SAQ, NinjaNerd, The IBCC Podcast); a couple of strong non-preferred fallbacks are marked as such. <em>Count to 10</em> is a full ANZCA Primary curriculum series (numbered episodes) and is the backbone for physiology. Where a group has few or no verified episodes, the shows haven't released a matching episode yet — use the per-group Spotify search links, which are always live.</p>
+    <p>Episode links open Spotify. LO codes map to the ANZCA curriculum (Appendix 2). This is a study aid, not an official ANZCA resource.</p>
+  </div>
+</footer>
+
+<script id="user-data" type="application/json">{}</script>
+<script>
+// ---- data -------------------------------------------------------------
+// seeds: [show, title, spotifyEpisodeId, note?]   note "★ non-preferred fallback"
+const SHOWS = ["Count to 10","Anaesthesia Coffee Break","Anaestheasier","ICU Primary PrepCast","ACCRAC","ANZCA Part 1 SAQs","NinjaNerd","The IBCC Podcast"];
+// compact per-card show chips (most useful for exam topics)
+const CHIPS = ["Count to 10","Anaestheasier","Anaesthesia Coffee Break","ABCs of Anaesthesia","ICU Primary PrepCast","The IBCC Podcast","ANZCA Part 1 SAQs","ACCRAC"];
+
+const DATA = [
+ {cat:"Physiology", groups:[
+  {n:"Acid–base physiology", lo:["BT_PO 1.78–1.79a"], mcq:4,
+   focus:"Regulation of acid–base balance, Henderson–Hasselbalch & strong ion difference, blood-gas interpretation.",
+   q:"acid base blood gas interpretation anaesthesia primary",
+   seeds:[
+    ["NinjaNerd","Acid–Base Disorders & ABG Interpretation","5sAD8BlkpBapTVNMdmyPKZ"],
+    ["The IBCC Podcast","Ep 54 – Approach to Acid–Base Disorders","1DoSlVAwV549HPEdOyHcIf"]]},
+
+  {n:"Body fluids & electrolytes", lo:["BT_PO 1.72–1.77b"], mcq:3,
+   focus:"Na/K/Mg/Ca/PO4 physiology, fluid balance, plasma, osmotic & oncotic pressure, fluid compartments.",
+   q:"fluid electrolytes osmolality anaesthesia primary",
+   seeds:[
+    ["The IBCC Podcast","Ep 11 – Hyperkalemia","4M1M4KckQi6dAEFYGvia7O"],
+    ["The IBCC Podcast","Ep 25 – Hypernatremia","7lLYgh1ksjthoukN8POugV"],
+    ["The IBCC Podcast","Ep 75 – Hypocalcemia","3r0Xbw9JRRgZ6TtakBquG1"]]},
+
+  {n:"Cardiovascular physiology", lo:["BT_PO 1.42–1.50"],
+   focus:"Cardiac electrophysiology, cardiac output, preload/afterload/contractility, BP control, regional circulations.",
+   q:"cardiovascular physiology cardiac output anaesthetic primary",
+   seeds:[
+    ["Count to 10","EP23 – Myocardial Oxygen Supply & Demand","3MRsXutub9TLX7VA5vUCgl"],
+    ["Count to 10","EP24 – Control of Cardiac Output & Pressure","62rC2pi1Kak3lWPrMThRws"],
+    ["Count to 10","EP25 – Regional Circulation","14gT74UFOxENNwmowUj5uM"]]},
+
+  {n:"Cellular physiology", lo:["BT_PO 1.82a"],
+   focus:"Cell membranes, transport, action potentials, second messengers.",
+   q:"cellular physiology membrane potential anaesthesia primary", seeds:[]},
+
+  {n:"Clinical monitoring", lo:["BT_SQ 1.5–1.6"],
+   focus:"Principles behind monitors, sources of error, when a device misleads.",
+   q:"anaesthesia monitoring capnography pulse oximetry primary", seeds:[]},
+
+  {n:"Endocrine physiology", lo:["BT_PO 1.85–1.89"],
+   focus:"Hypothalamic–pituitary axis, thyroid, adrenal, glucose homeostasis, calcium regulation.",
+   q:"endocrine physiology thyroid adrenal anaesthesia primary", seeds:[]},
+
+  {n:"Foetal & neonatal", lo:["SS_PA 1.1","SS_PA 1.21–1.26","SS_OB 1.3"],
+   focus:"Foetal circulation, transition at birth, neonatal physiology relevant to anaesthesia.",
+   q:"foetal neonatal circulation physiology anaesthesia", seeds:[]},
+
+  {n:"Gastrointestinal physiology", lo:["BT_GS 1.43","BT_PO 1.107"],
+   focus:"Gastric secretion & emptying, aspiration risk, swallowing, GI motility.",
+   q:"gastrointestinal physiology gastric emptying anaesthesia primary", seeds:[]},
+
+  {n:"Haematology", lo:["BT_PO 1.110–1.117"],
+   focus:"Blood constituents, haemostasis & coagulation cascade, blood groups, transfusion.",
+   q:"haematology coagulation haemostasis anaesthesia primary", seeds:[]},
+
+  {n:"Immunology", lo:["BT_PO 1.126–1.129","BT_RT 1.5–1.6"],
+   focus:"Immune response, anaphylaxis & hypersensitivity relevant to anaesthesia.",
+   q:"immunology anaphylaxis hypersensitivity anaesthesia primary", seeds:[]},
+
+  {n:"Liver physiology", lo:["BT_PO 1.103–1.106"],
+   focus:"Hepatic blood flow, metabolism, synthetic function, drug handling.",
+   q:"liver physiology hepatic blood flow anaesthesia primary", seeds:[]},
+
+  {n:"Maternal physiology", lo:["SS_OB 1.1–1.5"],
+   focus:"Physiological changes of pregnancy across systems; aortocaval compression.",
+   q:"maternal physiology pregnancy changes anaesthesia primary", seeds:[]},
+
+  {n:"Muscle physiology", lo:["BT_PO 1.100–1.102"],
+   focus:"Skeletal, cardiac & smooth muscle; excitation–contraction coupling; neuromuscular junction.",
+   q:"muscle physiology excitation contraction coupling anaesthesia", seeds:[]},
+
+  {n:"Nervous system physiology", lo:["BT_PO 1.92–1.99"],
+   focus:"Nerve conduction, sleep vs anaesthesia & EEG, ICP/CBF control, spinal cord.",
+   q:"neurophysiology nerve conduction intracranial pressure anaesthetic primary Count to 10", seeds:[]},
+
+  {n:"Nutrition & metabolism", lo:["BT_PO 1.82b–1.84"],
+   focus:"Energy metabolism, starvation & stress response, glucose/fat/protein metabolism.",
+   q:"metabolism nutrition starvation stress response anaesthesia", seeds:[]},
+
+  {n:"Principles of measurement", lo:["BT_SQ 1.5–1.6"],
+   focus:"Physics of measurement, transducers, statistics of measurement (BT_PO 1.2).",
+   q:"principles of measurement physics transducers anaesthesia primary", seeds:[]},
+
+  {n:"Renal physiology", lo:["BT_PO 1.61–1.71"],
+   focus:"Nephron & renal blood flow, GFR & tubular function, counter-current, endocrine kidney, renal dysfunction.",
+   q:"renal physiology nephron glomerular filtration anaesthetic primary Count to 10",
+   seeds:[
+    ["Count to 10","EP44 – Renal Anatomy, Blood Flow & Measurement","4aJa5eTRn4ivPNaY1EeIPt"],
+    ["Count to 10","EP45 – Glomerular Filtration, Tubular Function & Renal Acid–Base","6iSBVWWpDlHumhAyWnsC5S"],
+    ["Anaesthesia Coffee Break","Renal Anatomy","0puKHcUVhyt73UIt7E4BuG"],
+    ["Primary Cast","Renal Physiology (w/ Dr Josh Monester) ★","22XcGDMo0z6Q8r3sVUtwEZ"]]},
+
+  {n:"Respiratory physiology", lo:["BT_PO 1.15–1.39"],
+   focus:"Mechanics of breathing, lung volumes, V/Q, gas transport, control of breathing, applied respiratory.",
+   q:"respiratory physiology gas transport ventilation anaesthetic primary Count to 10",
+   seeds:[
+    ["Count to 10","EP2 – Mechanics of Breathing","1rnAGKSYvQoqXjoJU0iNvY"],
+    ["Count to 10","EP4 – Functional Anatomy of Respiratory System","1EtiucEcW72TfMhfClC8po"],
+    ["Count to 10","EP10 – Respiratory Measurement","2wYcsjN0PyFhiR99jcoT50"]]},
+
+  {n:"Thermoregulation", lo:["BT_PO 1.98a","SS_PA 1.23"],
+   focus:"Heat balance, mechanisms of heat loss, perioperative hypothermia.",
+   q:"thermoregulation temperature perioperative hypothermia anaesthesia", seeds:[]},
+ ]},
+
+ {cat:"Pharmacology", groups:[
+  {n:"Pharmacodynamics", lo:["BT_GS 1.1–1.6","BT_GS 1.49"], mcq:5,
+   focus:"Mechanisms of drug action, receptors, dose–effect, efficacy/potency, law of mass action, mechanisms of anaesthesia.",
+   q:"pharmacodynamics receptors dose response anaesthetic primary Count to 10",
+   seeds:[["Count to 10","EP32 – Intro to Pharmacodynamics","6a2MfIex4vQYAS2abNMgEn"]]},
+
+  {n:"Pharmacokinetics", lo:["BT_GS 1.7–1.13"],
+   focus:"Absorption, distribution, metabolism, elimination; compartment models & infusion kinetics.",
+   q:"pharmacokinetics compartment models context sensitive half time anaesthetic primary Count to 10",
+   seeds:[["Count to 10","EP33 – Intro to Pharmacokinetics","7xqRiZRy0MEjpP9G8zziP0"]]},
+
+  {n:"Variability in drug response", lo:["BT_GS 1.14–1.20"],
+   focus:"Genetic, physiological & pathological sources of variability; drug interactions; ADRs.",
+   q:"drug variability interactions pharmacogenetics anaesthesia primary",
+   seeds:[
+    ["Count to 10","EP35 – Pharmaceutics & Drug Variability","21bCtJIxY3wLONEPHDTGxE"],
+    ["ANZCA Part 1 SAQs","Pharmacokinetics of chronic kidney disease","0DxAR5BGCM6qrmrO3dSngg"]]},
+
+  {n:"Pharmaceutical aspects & drug development", lo:["BT_GS 1.21–1.22"], mcq:1,
+   focus:"Drug additives, preparation & packaging, isomerism, drug development.",
+   q:"pharmaceutics drug additives isomerism anaesthesia primary",
+   seeds:[["Count to 10","EP35 – Pharmaceutics & Drug Variability","21bCtJIxY3wLONEPHDTGxE"]]},
+
+  {n:"Inhalational anaesthetic agents", lo:["BT_GS 1.23–1.28","BT_GS 1.50"],
+   focus:"Volatiles & N2O, MAC, uptake & distribution, effects on organ systems, xenon.",
+   q:"inhalational anaesthetic agents volatile MAC sevoflurane anaesthetic primary", seeds:[]},
+
+  {n:"Intravenous anaesthetic agents", lo:["BT_GS 1.29–1.34"],
+   focus:"Propofol, thiopentone, ketamine, etomidate, dexmedetomidine, benzodiazepines; TCI.",
+   q:"intravenous induction agents propofol ketamine thiopentone anaesthetic primary",
+   seeds:[["ABCs of Anaesthesia","Basic Anaesthesia Drugs – Hypnotics (intro-level)","4Wv6QbPttNlT0I4N0QAFcL"]]},
+
+  {n:"Intravenous fluids", lo:["BT_PO 1.77–1.77b"],
+   focus:"Crystalloids & colloids: composition, indications, adverse effects.",
+   q:"intravenous fluids crystalloid colloid anaesthesia primary", seeds:[]},
+
+  {n:"Local anaesthetic drugs", lo:["BT_RA 1.3","BT_RA 1.14–1.16"],
+   focus:"Mechanism, pharmacology of individual agents, LA systemic toxicity (LAST).",
+   q:"local anaesthetics pharmacology toxicity anaesthetic primary",
+   seeds:[["Anaestheasier","Local Anaesthetics","2ltO9H80Ap44zcBwGD9g3x"]]},
+
+  {n:"Opioid agonists & antagonists", lo:["BT_PM 1.16–1.21","BT_GS 1.41–1.42"],
+   focus:"Opioid receptors, morphine/fentanyl/remifentanil, antagonists, adverse effects.",
+   q:"opioids morphine fentanyl remifentanil pharmacology anaesthetic primary", seeds:[]},
+
+  {n:"Neuromuscular blocking agents", lo:["BT_GS 1.35–1.39","BT_GS 1.47","BT_GS 1.55–1.56"],
+   focus:"Depolarising & non-depolarising blockers, sux, rocuronium, reversal & monitoring.",
+   q:"neuromuscular blocking agents suxamethonium rocuronium anaesthetic primary",
+   seeds:[["ABCs of Anaesthesia","Basic Anaesthesia Drugs – Muscle Relaxants (intro-level)","6Ryub2Aupy19NAdNHq70tC"]]},
+
+  {n:"Anticholinesterase drugs", lo:["BT_GS 1.39"],
+   focus:"Neostigmine, sugammadex, organophosphates; reversal of neuromuscular block.",
+   q:"anticholinesterase neostigmine sugammadex anaesthesia primary", seeds:[]},
+
+  {n:"Autonomic NS pharmacology", lo:["BT_PO 1.51–1.55","BT_RT 1.17–1.18"],
+   focus:"Autonomic receptors & transmitters; sympathomimetics, vasopressors, anticholinergics.",
+   q:"autonomic pharmacology vasopressors sympathomimetics anaesthesia primary", seeds:[]},
+
+  {n:"Adrenoreceptor blocking agents", lo:["BT_PO 1.54"],
+   focus:"Alpha- & beta-blockers: pharmacology and perioperative relevance.",
+   q:"beta blockers alpha blockers pharmacology anaesthesia primary", seeds:[]},
+
+  {n:"Antiarrhythmics", lo:["BT_PO 1.55–1.57"],
+   focus:"Classification, amiodarone in detail, other antiarrhythmic agents.",
+   q:"antiarrhythmics amiodarone classification anaesthesia primary", seeds:[]},
+
+  {n:"Antihypertensives", lo:["BT_PO 1.58"],
+   focus:"GTN & sodium nitroprusside in detail; other antihypertensive agents.",
+   q:"antihypertensives GTN sodium nitroprusside anaesthesia primary",
+   seeds:[["The IBCC Podcast","Ep 29 – Hypertensive Emergency (applied)","5qvVDes18hOuf21wcKgdaH"]]},
+
+  {n:"Cardiac arrest, ischaemia & failure", lo:["BT_PO 1.59–1.60"],
+   focus:"Drugs for myocardial ischaemia/infarction and acute/chronic cardiac failure; inotropes.",
+   q:"inotropes cardiac failure ischaemia pharmacology anaesthesia primary", seeds:[]},
+
+  {n:"Diuretics", lo:["BT_PO 1.81–1.82"],
+   focus:"Classification by site of action; loop, thiazide, K-sparing, osmotic, CA inhibitors.",
+   q:"diuretics furosemide mannitol pharmacology anaesthesia primary", seeds:[]},
+
+  {n:"Endocrine pharmacology", lo:["BT_PO 1.90–1.91"],
+   focus:"Insulin & oral hypoglycaemics, thyroid drugs, corticosteroids, glucagon.",
+   q:"endocrine pharmacology insulin corticosteroids anaesthesia primary", seeds:[]},
+
+  {n:"Antiemetics", lo:["BT_GS 1.44","BT_GS 1.62"],
+   focus:"PONV pathways and pharmacology of antiemetic classes.",
+   q:"antiemetics PONV ondansetron dexamethasone anaesthesia primary", seeds:[]},
+
+  {n:"Gastrointestinal pharmacology", lo:["BT_GS 1.44","BT_PO 1.109"], mcq:1,
+   focus:"Antiemetics (shared) plus acid suppression: PPIs, H2 antagonists, antacids.",
+   q:"gastrointestinal pharmacology proton pump inhibitors anaesthesia primary", seeds:[]},
+
+  {n:"Drugs & the coagulation system", lo:["BT_PO 1.118–1.124"],
+   focus:"Heparins, warfarin, DOACs, antiplatelets, antifibrinolytics, reversal agents.",
+   q:"anticoagulants heparin warfarin DOAC antiplatelet anaesthesia primary", seeds:[]},
+
+  {n:"Histamine & serotonin", lo:["BT_PO 1.89"],
+   focus:"Histamine & 5-HT physiology and antagonists relevant to anaesthesia.",
+   q:"histamine serotonin antihistamines pharmacology anaesthesia primary", seeds:[]},
+
+  {n:"Antimicrobials / chemotherapeutic agents", lo:["BT_GS 1.45–1.46"],
+   focus:"Antibiotic prophylaxis, common classes, chemotherapy agents of anaesthetic relevance.",
+   q:"antibiotics antimicrobials surgical prophylaxis anaesthesia primary", seeds:[]},
+
+  {n:"Neuropharmacology", lo:["BT_PM 1.22"],
+   focus:"Anticonvulsants, antiparkinsonian & antidepressant drugs; CNS pharmacology.",
+   q:"neuropharmacology anticonvulsants antidepressants anaesthesia primary", seeds:[]},
+
+  {n:"NSAIDs", lo:["BT_PM 1.23–1.25"],
+   focus:"NSAIDs & paracetamol: mechanism, COX selectivity, adverse effects.",
+   q:"NSAIDs paracetamol COX pharmacology anaesthesia primary", seeds:[]},
+
+  {n:"Obstetric pharmacology", lo:["SS_OB 1.9–1.12"],
+   focus:"Uterotonics, tocolytics, drugs in pregnancy & placental transfer.",
+   q:"obstetric pharmacology oxytocin tocolytics anaesthesia primary", seeds:[]},
+
+  {n:"Pain", lo:["BT_PM 1.1–1.15"],
+   focus:"Pain pathways & physiology, acute→chronic, neuropathic pain, analgesic pharmacology.",
+   q:"pain physiology pathways anaesthetic primary Count to 10",
+   seeds:[["Count to 10","EP40 – Pain Physiology","2uPF3E5FScgw3cWTYdvAHP"]]},
+
+  {n:"Respiratory pharmacology", lo:["BT_PO 1.40–1.41a","BT_AM 1.3"],
+   focus:"Anti-asthma drugs, pulmonary hypertension & nitric oxide, oxygen therapy.",
+   q:"respiratory pharmacology bronchodilators oxygen therapy anaesthesia primary", seeds:[]},
+ ]},
+
+ {cat:"Anatomy, Equipment & Misc", groups:[
+  {n:"Anatomy", lo:["BT_AM 1.1","BT_RT 1.20–1.22","BT_GS 1.70–1.74","BT_RA 1.4","BT_RA 1.17"],
+   focus:"Applied procedural anatomy: airway/respiratory, vascular access, neuraxial, cerebral/spinal circulation.",
+   q:"airway anatomy neuraxial anatomy anaesthetic primary", seeds:[]},
+
+  {n:"Equipment & safety", lo:["BT_SQ 1.7–1.11"],
+   focus:"Anaesthetic machine, breathing systems, vaporisers, electrical safety, monitoring hardware, ultrasound.",
+   q:"anaesthesia equipment safety breathing systems vaporiser primary Count to 10",
+   seeds:[["Count to 10","EP52 – Ultrasound & Neuro-monitoring (Equipment & Safety)","29QrDVWtqf6Ktm9qys5Bkj"]]},
+
+  {n:"Integrated / miscellaneous", lo:["BT_GS 1.63–1.69"],
+   focus:"Alcohol, nicotine, cannabinoids, amphetamines, herbal remedies; cross-cutting topics. Plus exam-technique episodes.",
+   q:"anaesthesia alcohol cannabinoids drugs of abuse primary",
+   seeds:[
+    ["Anaesthesia Coffee Break","How to Get Started with the First Part Exam","1Pibfpomos3EBef78QKinV"],
+    ["Anaesthesia Coffee Break","Approaching the Primary Exam (w/ Prize Winner Dr Maddie)","4rT21G9iudOl2c1BJ5Nz3d"],
+    ["Anaesthesia Coffee Break","2025.1 Primary Exam Review","2Zfb6xzmLQhoyzV07UrI5g"]]},
+ ]},
+];
+
+// ---- render -----------------------------------------------------------
+const SEARCH_BASE = "https://open.spotify.com/search/";
+const EP_BASE = "https://open.spotify.com/episode/";
+const searchUrl = (q)=> SEARCH_BASE + encodeURIComponent(q) + "/episodes";
+
+const SEED_EPISODES = {
+  "Acid–base physiology": [{"title": "Acid Base Disorders & ABG Interpretation", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/5sAD8BlkpBapTVNMdmyPKZ"}, {"title": "IBCC Episode 54 - Approach to Acid Base Disorders", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/1DoSlVAwV549HPEdOyHcIf"}, {"title": "Respiratory Acidosis", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/7DIRZciJfoEEVl8SNZ9ml3"}, {"title": "Metabolic Acidosis", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/1xCQAtpaI5acUBvcgeLcYu"}, {"title": "Acid-Base Disorders", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/5Gf4OQRCYiE4nsuX54gOqX"}, {"title": "BONUS EPISODE: Professor David Story chats to us about Acid Base Physiology", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/23Zhdz2p8BNwg0gMfsgI9i"}],
+  "Body fluids & electrolytes": [{"title": "Antiarrhythmic Drugs", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/4aNf1qImKeZ5Ck7ynnsICw"}, {"title": "IBCC Episode 36 - All things Phosphate", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/40wQqnUyjvNzKmjO08UhiL"}, {"title": "IBCC Episode 113 - Sodium Channel Blocker Toxicity", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/1an00mkxE2uWTpJfHgXIAg"}, {"title": "Viva practice with Luke - Suxamethonium, oxygen delivery to tissues, sodium nitroprusside, functions of the liver", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/7cEfVxQfsuIP5ntjSgCM13"}, {"title": "Sodium Disorders", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/0vK2zV2VhojmChnNxtLEC9"}, {"title": "Potassium Disorders", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/7FrCNdjGD6rXrwcMgnAtPJ"}],
+  "Cardiovascular physiology": [{"title": "EP24 – Control of Cardiac Output & Pressure | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/62rC2pi1Kak3lWPrMThRws"}, {"title": "EP25 – Regional Circulation | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/14gT74UFOxENNwmowUj5uM"}, {"title": "EP23 – Myocardial Oxygen Supply & Demand | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/3MRsXutub9TLX7VA5vUCgl"}, {"title": "EP22 – Electrophysiology of the Heart | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/2WSOrEKk6XYkH9wVwVi6Im"}, {"title": "Preload", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/3jXGrd1xVYqOu0lvOBiiBT"}, {"title": "EP26 – Applied Cardiac Physiology Part 1 | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/0XLfjpMvvDJ4kBki8cEtTv"}, {"title": "EP29 – Measurement | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/4JxH1UEu5X5jVdrpqBXLea"}, {"title": "Miller's Anesthesia proven WRONG by Dr Stan! What REALLY happens to volatile washout with changes in cardiac output", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/25rPq8671oDYmXQmbqele9"}, {"title": "Cardiovascular Physiology Categorisation Drills for the exam PART 1", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/32zj3dOR9uYr9JtaHV4tLG"}, {"title": "Deep dive into blood pressure with Dr Stuart Watson - Prize winner and creator of Ketamine Nightmares", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/4OgqMsmcxWLKOYeRXIDgdk"}],
+  "Cellular physiology": [{"title": "Cardiac action potentials", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/7qo6kxPGphMjSWmFsojbbu"}, {"title": "How LAs prevent conduction of action potentials", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/09KmbVWHNeKYYMwok3nm1B"}, {"title": "EP14 - Pacemaker AP vs Cardiac Myocyte AP | MiniPod | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6aojYFIMY96pMTBbt6u3YY"}, {"title": "EP16 – NMJ & Suxamethonium | MiniPod | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/5X5eEWRgZhjez3tjkP6Kyz"}],
+  "Clinical monitoring": [{"title": "How a pulse oximeter works", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/153utnTigWnGaphfVRAgIW"}, {"title": "Does BIS / ENTROPY really prevent awareness under anaesthesia?", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/3sjslUwzpIEWAEMPZEQjz5"}, {"title": "#036: Physics and Monitoring in ICU - Part 1", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/6V1HtSQRdeFcMB4ngQRd8Y"}, {"title": "Arterial lines", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/6wYF5idHGY4P7YUalZlCYM"}, {"title": "EP52 – Ultrasound & Neuro-monitoring | Anaesthetic Primary Topic | Equipment & Safety | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/29QrDVWtqf6Ktm9qys5Bkj"}],
+  "Endocrine physiology": [{"title": "Hypoparathyroidism", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/1jlS5t76B73bFSTIxH1q7S"}, {"title": "Hyperparathyroidism", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/351QzbBPbA0tjTLHvpJuS1"}, {"title": "Thyroid and Parathyroid Surgery", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/4nCzq0HzjhZjYZ8pFxRr0r"}, {"title": "IBCC Episode 15 Adrenal Crisis", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3d3AnbLawhsDbpMVMxzzsZ"}, {"title": "IBCC Episode 23 - Thyroid Storm", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/79sU4nQk0SPzYqst9sjCIs"}],
+  "Foetal & neonatal": [{"title": "EP21– Foetal Circulation and Neonatal Physiology | MiniPod | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/1tuqvGfsJuDOQtqglbOy5k"}, {"title": "Neonatal airway anatomy", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/1v9YmfXsXiSSlc7c7N16pO"}, {"title": "Neonatal Sepsis and Resuscitation", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/5gJvMWq7N6QraywX6ZlwZJ"}],
+  "Gastrointestinal physiology": [{"title": "IBCC Episode 97 - Nausea & antiemetics", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/7pgIhCLDqe4kdtXHqey3DR"}, {"title": "Lower Oesophageal Sphincter", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/2VNpwBNiiMuTDtJRQINmGQ"}, {"title": "EP42 – Live Practice Viva with Derek and Special Guest Celia | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6y3kpHXh68v6ZNK4fiMN6V"}],
+  "Haematology": [{"title": "Platelets and their role in haemostasis", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/5JEgGWuIAXw1k5gH9B7y6J"}, {"title": "Anticoagulants, Thrombolytics, and Antiplatelet Agents", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/37W0aQdncEXC7HEDeU2oGV"}, {"title": "#Epi 93 - ICU Primary Snippet 36 - Fibrinolysis and Alteplase", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/7m4o6OlPy9f4xEX27XK8OR"}, {"title": "Blood Transfusions", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/7ccJFiavm1eU2dH4Mdd9gj"}, {"title": "#033: Haematology Physiology", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/7MqcPFjECn3PqvqsC1meec"}],
+  "Immunology": [{"title": "EP30 – Immunology & Hypersensitivity with Justin | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/7CAvq2IG5QSURtfrT0tOvO"}, {"title": "#032: Immunology", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/1j1SrF0IgnCfJFkXvkXjeU"}, {"title": "IBCC Episode 77 - Anaphylaxis", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/36OLhhGHAN2UVANfmaSDDY"}],
+  "Liver physiology": [{"title": "IBCC Episode 38 - Hepatic Encephalopathy", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/2YxYDcDFGQEpvzMWzMYRbG"}, {"title": "# Epi 57 - ICU Primary - Bedside Preparation - Albumin, PRBC and Blood Grouping", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/2e4uwSw5p0yTNpl4ThqwkZ"}, {"title": "# Epi 63 - ICU Primary Snippet 6 - Pharmacology of 4% Albumin", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/6E5Sewgsb8jIui7T2HeYhj"}, {"title": "Liver disease", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/44zZL7nxSerF7Syh2XlebK"}],
+  "Maternal physiology": [{"title": "#029: Obstetric Physiology", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/1kz4nZB8acLt6DEb5EZI6L"}, {"title": "#Epi 83 - ICU Primary Snippet 26 - Uteroplacental Circulation", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/1l7nnvHbMJKdtq8TtEkqs1"}, {"title": "Myasthenia Gravis Anaesthesia Final Exam Case", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/29hQdtWlAwRYGyb9mdvzXu"}],
+  "Muscle physiology": [{"title": "# Epi 60 - ICU Primary Snippet 3 - Smooth muscle cell - Excitation- contraction coupling", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/6O0qS7gUkyJW6oyheZuCmD"}, {"title": "Prostaglandin effects on smooth muscle", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/3L8n1cvPu1T57PEmepIK33"}, {"title": "#Epi 53 - ICU Primary - Bedside preparation Part 10 - Neuromuscular Blockade", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/5x5USHDzdi2pzXI2kJYr7E"}, {"title": "EP16 – NMJ & Suxamethonium | MiniPod | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/5X5eEWRgZhjez3tjkP6Kyz"}],
+  "Nervous system physiology": [{"title": "EP39 – Cerebral Blood Flow, ICP & Spinal Cord Perfusion | Anaesthetic Primary Topic | Neurophysiology & Pain | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/3ChNKcLMnfgUmY68ylsM3K"}, {"title": "EP38 – Electrophysiology, Sleep & EEG | Anaesthetic Primary Topic | Neurophysiology & Pain | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/4JxTNX0d7aBa8NgZU0ajc4"}, {"title": "EP37 – Functional Anatomy | Anaesthetic Primary Topic | Neurophysiology & Pain | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/52KhmxQVGOhMegT2uQkzQG"}, {"title": "#Epi 42 - Primary Viva 2 - Cerebral Blood Flow & NMDA receptor", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/462o6LHfn0FmbjkEXtYW4m"}, {"title": "Viva practice with Katherine! - Ketamine, neurophysiology and ICP, anaphylaxis, normal saline", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5JnmpDdKV8UOX9vML5VQ5l"}, {"title": "Cardiac action potentials", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/7qo6kxPGphMjSWmFsojbbu"}, {"title": "Spinal cord perfusion", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/30fsFWo7L4xsW9up2coS07"}, {"title": "Cerebral Blood Flow", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/605kzfOjPP0CXFPzX2qK0l"}],
+  "Nutrition & metabolism": [{"title": "IBCC Episode 83 - Refeeding Syndrome", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3F4xnxZk2vTptOB5EWzy41"}, {"title": "How does morbid obesity affect washout of volatile anaesthetic?", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/4oCu9c3rCHeFxf1aCRcnH6"}, {"title": "The cardiovascular changes in morbid obesity and how would YOU manage this patient perioperatively?", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/3pFbn9U4eGZGsywxsZrLbf"}],
+  "Principles of measurement": [{"title": "# Epi 67- ICU Primary Snippet 10 - Doppler Effect and Properties of Ultrasound transducers", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/5exU89csng7HRS7WoSuNdh"}, {"title": "#036: Physics and Monitoring in ICU - Part 1", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/6V1HtSQRdeFcMB4ngQRd8Y"}, {"title": "Humidity, measurement and why it's necessary for ventilated patients", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/6sLkyDGbOkAdIPbtOZuLxs"}, {"title": "EP29 – Measurement | Anaesthetic Primary Topic | Cardiac Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/4JxH1UEu5X5jVdrpqBXLea"}, {"title": "#037: Physics and Monitoring in ICU - Part 2", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/5jZ7CS16wnacRyRw6PVeM9"}],
+  "Renal physiology": [{"title": "EP45 – Glomerular Filtration, Tubular Function & Renal Acid-Base | Anaesthetic Primary Topic | Renal Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6iSBVWWpDlHumhAyWnsC5S"}, {"title": "# Epi 59- ICU Primary Snippet 2 - Serum Creatinine and Creatinine Clearance", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/3rYorhavitln6xs5NxIZKt"}, {"title": "EP46 – Counter-Current Mechanism, Urine Production and Applied physiology | Anaesthetic Primary Topic | Renal Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/4Vphh3DBK82ft9fjNwp1Iw"}, {"title": "IBCC Episode 18 - Acute Kidney Injury", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/504xkXDwO1RczfL2lR8EBE"}, {"title": "Chronic Kidney Disease | CKD", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/5OgQMSXrqjRHSRsYMtWu3A"}, {"title": "Pharmacokinetics of chronic kidney disease", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/0DxAR5BGCM6qrmrO3dSngg"}, {"title": "Acute Kidney Injury (AKI)", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/2B1lIgOBeFrZYNeYxWLO52"}, {"title": "Clearance - Deranged Physiology", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/35iBERbPl3KcAaUlMFnqWV"}],
+  "Respiratory physiology": [{"title": "EP2 - Mechanics Of Breathing | Anaesthetic Primary Topic | Respiratory Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/1rnAGKSYvQoqXjoJU0iNvY"}, {"title": "EP6 – V/Q Relationships | Anaesthetic Primary Topic | Respiratory Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/1fU9QXWwnKV4taIAQv8h5p"}, {"title": "Dead space and West zones", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/5SIbyxVqplqAkJqfWVwJrQ"}, {"title": "EP1 - Control of Ventilation | Anaesthetic Primary Topic | Respiratory Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/2zb8H6fGVEA6pLuf7XTveY"}, {"title": "EP3 – Gas Volumes & Gas Exchange | Anaesthetic Primary Topic | Respiratory Physiology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6uJ9uDH7USJ8M6K4OFQ7Xr"}, {"title": "Categorisation exercises to drill for the viva exam!", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/2WF99gRoBiTr8782nLIRGR"}, {"title": "Ventilation and Work of Breathing", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/0Zs24cMVGSqYJfRdIeSDs7"}, {"title": "Lung volumes | Respiratory physiology", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5GGOvEvAr6BdDdvde1YcM1"}, {"title": "Work of Breathing | Respiratory Physiology", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/6tGkYOfVfMZyVBgajIozwM"}, {"title": "Dead Space | Respiratory Physiology", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/0mdmxI6dcuxgqnfMw3kVc7"}],
+  "Thermoregulation": [{"title": "Malignant Hyperthermia", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/3BJzoXDiyDjypRfcQQNwrH"}, {"title": "IBCC Episode 47 Hyperthermia", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3M44MdmUwYkkDD5Ky8yY9D"}, {"title": "IBCC Episode 65 - Hypothermia", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3oPqS9XossdNa6gxXmCY4d"}],
+  "Pharmacodynamics": [{"title": "#Epi 91 - ICU Primary Snippet 34 - Receptors - Agonist, Partial agonist and Inverse agonist", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/7GN6w7R976FjYUdxk0AebZ"}, {"title": "Autonomic Pharmacology: Adrenergic Antagonists", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/33fqpXQEBf7vFd9dbhDpe0"}, {"title": "Autonomic Pharmacology: Muscarinic Antagonists", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/2XCaLLNE5DtnlfMvffKlc0"}, {"title": "EP32 – Intro to Pharmacodynamics | Anaesthetic Primary Topic | General Pharmacology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6a2MfIex4vQYAS2abNMgEn"}, {"title": "#Epi 42 - Primary Viva 2 - Cerebral Blood Flow & NMDA receptor", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/462o6LHfn0FmbjkEXtYW4m"}, {"title": "Pharmacodynamics of propofol (excluding CNS)", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/60tOr14YQQZHoRZDi6L8U4"}, {"title": "Structure and function of the NMDA receptor", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/02LBaTR33e5d3MKjjQSeTH"}, {"title": "Autonomic Pharmacology: Adrenergic Agonists", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/56h2yxpumOVifPBYFZLYMo"}],
+  "Pharmacokinetics": [{"title": "EP33 – Intro to Pharmacokinetics | Anaesthetic Primary Topic | General Pharmacology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/7xqRiZRy0MEjpP9G8zziP0"}, {"title": "EP31 – Propofol TCI Pharmacokinetics with Dr Anthony | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/17iwdofUcodiDg8Ub7ny85"}, {"title": "Pharmacokinetics of chronic kidney disease", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/0DxAR5BGCM6qrmrO3dSngg"}, {"title": "CRQs for the Final FRCA - Pharmacokinetics in Sepsis", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/2ulg8GF0bDmuNiMtOLhvOz"}, {"title": "# Epi 58- ICU Primary Snippet 1 - Critical Illness and Pharmacokinetics", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/0lz9JnyCAtpYoKprDCxEgx"}, {"title": "# Epi 59- ICU Primary Snippet 2 - Serum Creatinine and Creatinine Clearance", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/3rYorhavitln6xs5NxIZKt"}, {"title": "Clearance - Deranged Physiology", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/35iBERbPl3KcAaUlMFnqWV"}, {"title": "Live viva exam demo for the ANZCA part 1 exam - Pat v2", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5K23hxAwrC5K46eBY7IoKZ"}],
+  "Variability in drug response": [{"title": "Drug interactions and side effects.", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/6jLVdNdwz3j6xPpdSrAivU"}, {"title": "EP35 – Pharmaceutics & Drug Variability | Anaesthetic Primary Topic | General Pharmacology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/21bCtJIxY3wLONEPHDTGxE"}, {"title": "#Epi 54 - ICU Primary - Bedside preparation Part  11 - Liver Physiology and pharmacology part 1", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/3zzY91bg8OLmrhjky4j9dq"}, {"title": "EP33 – Intro to Pharmacokinetics | Anaesthetic Primary Topic | General Pharmacology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/7xqRiZRy0MEjpP9G8zziP0"}],
+  "Pharmaceutical aspects & drug development": [{"title": "EP35 – Pharmaceutics & Drug Variability | Anaesthetic Primary Topic | General Pharmacology | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/21bCtJIxY3wLONEPHDTGxE"}, {"title": "Functional Residual Capacity (FRC) and how anaesthesia makes a mess of it!", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/79NxkioFMRNgvJAUZJuSCN"}],
+  "Inhalational anaesthetic agents": [{"title": "How does morbid obesity affect washout of volatile anaesthetic?", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/4oCu9c3rCHeFxf1aCRcnH6"}, {"title": "Miller's Anesthesia proven WRONG by Dr Stan! What REALLY happens to volatile washout with changes in cardiac output", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/25rPq8671oDYmXQmbqele9"}, {"title": "Basic Anaesthesia Drugs - Volatiles", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/72AFrcMxFcm3L961sBpTRC"}, {"title": "How inhalational anaesthetics cause loss of consciousness", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/63sEPQ2ghS4iINys7Q6qqQ"}, {"title": "Morbid obesity washout of inhalational anaesthesia", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/7kpuoQ5p9fy8MbOLxiPTsS"}, {"title": "Nitrous Oxide", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/11uvbsZdZgwqnigBEvw7Bl"}, {"title": "The 5 critical effects of pregnancy on respiratory physiology", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5Ku25yIbzCreQhwu9J3KfA"}, {"title": "Live viva exam demo for the ANZCA part 1 exam - Pat v1", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/4CQjDRj0uD7DqSNMG0NSwO"}],
+  "Intravenous anaesthetic agents": [{"title": "Propofol and remifentanil TCI", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/5ipuX1zF0XqVVGsDcCAhms"}, {"title": "Time to awakening after propofol TCI", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/5DL7FJTivRXVcc3uN0CPjC"}, {"title": "EP31 – Propofol TCI Pharmacokinetics with Dr Anthony | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/17iwdofUcodiDg8Ub7ny85"}, {"title": "Propofol for the FRCA Primary", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/63AQpuIK8EywydDFmOY5gj"}, {"title": "#Epi 41 - Primary Viva 1 - Propofol & Atropine", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/4lbUHRdjq9GPyVkD2SIhBf"}, {"title": "Viva practice with Katherine! - Ketamine, neurophysiology and ICP, anaphylaxis, normal saline", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5JnmpDdKV8UOX9vML5VQ5l"}, {"title": "Deep dive into blood pressure with Dr Stuart Watson - Prize winner and creator of Ketamine Nightmares", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/4OgqMsmcxWLKOYeRXIDgdk"}, {"title": "Pharmacodynamics of propofol (excluding CNS)", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/60tOr14YQQZHoRZDi6L8U4"}],
+  "Intravenous fluids": [{"title": "Viva practice with Katherine! - Ketamine, neurophysiology and ICP, anaphylaxis, normal saline", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5JnmpDdKV8UOX9vML5VQ5l"}, {"title": "Viva Practice with Dr Max - Anaphylaxis, CVP trace, normal saline", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/4ezmRhpvmnhvh9b9eeEEi7"}, {"title": "IBCC Episode 42 Fluid Selection & pH Guided Resuscitation", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/7C6Tpr3ppHbE9HET7SBphU"}, {"title": "IBCC Episode 1 - DKA", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/2U1Mnn6HxeKb0l5XKz8qoe"}, {"title": "IBCC Episode 41 - Hypercalcemia", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/5oC0BGAGnv9nApLiJPfe1f"}],
+  "Local anaesthetic drugs": [{"title": "Basic Anaesthetic Drugs - Local Anaesthetics", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/72lTogC5YPlumcg2GacKz8"}, {"title": "#021- Local Anaesthetics & Steroids", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/4v0aIKJ2MOKjkRNM9OncWd"}, {"title": "Viva Practice with Mason - Fasting, Local Anaesthetics, Shunt and MAC", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/6Laqd3tfcdhfPl02MTE7Xy"}, {"title": "PK for onset and offset of local anaesthetics", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/1vjthZDBl3pf7O1EFhrQiR"}, {"title": "Local Anaesthetics", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/2ltO9H80Ap44zcBwGD9g3x"}, {"title": "Speed of onset of local anaesthetics and another textbook correction!", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/3lzqFJI83tFILOr52sJvZP"}],
+  "Opioid agonists & antagonists": [{"title": "PCA morphine fentanyl", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/7AW4F03vRG9fNwCGmbTGIr"}, {"title": "#Epi 43 - Primary Viva 3 - Morphine & BMR", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/55u7hy6O01CQXwXp37Jt0e"}, {"title": "Basic Anaesthesia Drugs - Opioids", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/0lnCOvG31hpRus3Hq7Beg6"}, {"title": "Propofol and remifentanil TCI", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/5ipuX1zF0XqVVGsDcCAhms"}, {"title": "#Epi 87 - ICU Primary Snippet 30 - Opioid Receptors", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/0IXPwQev2zvP7NqosyFqOO"}, {"title": "#Epi 92 - ICU Primary Snippet 35 - Remifentanyl Vs Fentanyl", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/2oPkUxktITFkSimq5IPSlc"}, {"title": "Part 2 Final Exam Viva Demonstration - The Thyroid and Anaesthesia with James", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/1COkJ9wSJSSfxOBdjjEnG2"}],
+  "Neuromuscular blocking agents": [{"title": "#Epi 53 - ICU Primary - Bedside preparation Part 10 - Neuromuscular Blockade", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/5x5USHDzdi2pzXI2kJYr7E"}, {"title": "EP16 – NMJ & Suxamethonium | MiniPod | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/5X5eEWRgZhjez3tjkP6Kyz"}, {"title": "Basic Anaesthesia Drugs - Muscle Relaxants", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/6Ryub2Aupy19NAdNHq70tC"}, {"title": "Viva practice with Luke - Suxamethonium, oxygen delivery to tissues, sodium nitroprusside, functions of the liver", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/7cEfVxQfsuIP5ntjSgCM13"}, {"title": "Succinylcholine adverse effects", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/1GqwCxhwKU3cVsmeCyYSYS"}, {"title": "Muscle Relaxants and their speed of onset", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/7twS1cgHxqvVZWKXsKznWE"}, {"title": "Muscle Relaxants", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/0IMuPAYORGgK9fSxaElJth"}],
+  "Anticholinesterase drugs": [{"title": "Antiplatelets, Anticoagulants, and Thrombolytics", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/5inDIgn5AVRB3kHaBRPQiV"}],
+  "Autonomic NS pharmacology": [{"title": "Autonomic Pharmacology: Adrenergic Agonists", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/56h2yxpumOVifPBYFZLYMo"}, {"title": "#Epi 41 - Primary Viva 1 - Propofol & Atropine", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/4lbUHRdjq9GPyVkD2SIhBf"}, {"title": "IBCC Episode 119 - Sympathomimetic Toxicity", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/0S8kFWsAK6hIBAWAjB6YMM"}, {"title": "Basic Anaesthesia Drugs - Vasopressors and Inotropes", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/1FFRp67mFG09xTJFRYaNaV"}, {"title": "Vasopressors", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/7hG69DySdZydD1IAwbmcD5"}, {"title": "Autonomic Pharmacology: Adrenergic Antagonists", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/33fqpXQEBf7vFd9dbhDpe0"}],
+  "Adrenoreceptor blocking agents": [{"title": "Epi 97 - ICU Primary Snippet 40 - Metoprolol Vs Verapamil", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/15yJM8X3kTSzUOAlqHQDH9"}, {"title": "Antihypertensive Drugs", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/3Yg92M6Q7YyPW0SQowquGx"}, {"title": "Antianginal Drugs", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/3JsucVE97r0ObxfMoQ2ObJ"}, {"title": "Drugs for Heart Failure", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/1bjYkiwBZXo5xEmC5ShTmH"}],
+  "Antiarrhythmics": [{"title": "Antiarrhythmic Drugs", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/4aNf1qImKeZ5Ck7ynnsICw"}, {"title": "Amiodarone", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/3HxLbDmZ94F1FaXs28AZcy"}, {"title": "Tachycardia and Arrhythmias", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/4A7PquRDaN8O5PcQSNE2mj"}, {"title": "Epi 97 - ICU Primary Snippet 40 - Metoprolol Vs Verapamil", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/15yJM8X3kTSzUOAlqHQDH9"}],
+  "Antihypertensives": [{"title": "IBCC Episode 29 - Hypertensive Emergency", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/5qvVDes18hOuf21wcKgdaH"}, {"title": "Viva practice with Luke - Suxamethonium, oxygen delivery to tissues, sodium nitroprusside, functions of the liver", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/7cEfVxQfsuIP5ntjSgCM13"}, {"title": "Antihypertensive Drugs", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/3Yg92M6Q7YyPW0SQowquGx"}, {"title": "# Epi 72 - ICU Primary Snippet 15 - GTN Pharmacology", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/5ym7y141UT6DTx76eZ20mV"}],
+  "Cardiac arrest, ischaemia & failure": [{"title": "Drugs for Heart Failure", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/1bjYkiwBZXo5xEmC5ShTmH"}, {"title": "IBCC Episode 14 Post Cardiac Arrest Management", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/6UBLA77pCfwQMBAhcu4ZUy"}, {"title": "Basic Anaesthesia Drugs - Vasopressors and Inotropes", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/1FFRp67mFG09xTJFRYaNaV"}, {"title": "Heart Failure", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/03WBhi4PQ8KLtEykn8CooS"}],
+  "Diuretics": [{"title": "#Epi 88 - ICU Primary Snippet 31 -Furosemide Vs Acetazolamide", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/6rpaoI7ghX6KSmXcyC4xBq"}, {"title": "Diuretics", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/1hI53Whi6vV4qzWwTC6TN8"}, {"title": "#003- Diuretics", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/05rtvk5fjVifaFYIGqmIUf"}, {"title": "IBCC Episode 72 - Dominating the Diuresis", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/73xfPd4q5qczgvqHhAeC3l"}],
+  "Endocrine pharmacology": [{"title": "IBCC Episode 32 - Metformin Toxicity", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/0d33dgLjwMQmm9vijk5Q0S"}, {"title": "Oral hypoglycaemic drugs", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/3SHIJrLHYKI77kBAMuENUn"}, {"title": "IBCC Episode 83 - Refeeding Syndrome", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3F4xnxZk2vTptOB5EWzy41"}, {"title": "IBCC Episode 99 - Hypertriglyceridemic Pancreatitis", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/2lM010gZIvg9nTSNyLufu8"}, {"title": "IBCC Episode 101 - Stress Hyperglycemia in the ICU", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/4sji7CuIaKpOx17IxLdeEn"}],
+  "Antiemetics": [{"title": "IBCC Episode 97 - Nausea & antiemetics", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/7pgIhCLDqe4kdtXHqey3DR"}],
+  "Gastrointestinal pharmacology": [{"title": "Scoliosis, Consent and Hypotension | Anaesthesia Final Exam Viva", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/1cvCGfFlQX0C9VNpTv3T1f"}],
+  "Drugs & the coagulation system": [{"title": "Anticoagulants, Thrombolytics, and Antiplatelet Agents", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/37W0aQdncEXC7HEDeU2oGV"}, {"title": "IBCC Episode 81 - Unfractionated heparin (UFH), LMWH, fondaparinux, argatroban, and bivalirudin", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/1y5pGtC0NpNKtpFMSRvYFy"}, {"title": "Antiplatelets, Anticoagulants, and Thrombolytics", "show": "Ninja Nerd", "url": "https://open.spotify.com/episode/5inDIgn5AVRB3kHaBRPQiV"}, {"title": "IBCC Episode 52 Anticoagulation Reversal", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3PoD17M4eNGUtHVWTqV5yt"}, {"title": "Warfarin reversal", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/4f4R45K99dfn2gyAGYYQ0y"}],
+  "Histamine & serotonin": [{"title": "IBCC Episode 40 - Serotonin Syndrome / Toxicity", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/2kNEzOWmrgN8MIAXCbSRwq"}, {"title": "IBCC Episode 48 Angioedema", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/1MuXPuzJFJ4k0GVQiwepUS"}, {"title": "Communication and Hypnosis in Anaesthesia", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/1aQqlkGfUg6crKyPEaLrFw"}],
+  "Antimicrobials / chemotherapeutic agents": [{"title": "IBCC Episode 21 - Antibiotics", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/4NCHhlf7Ls8zvkGPT6RHwf"}, {"title": "IBCC Episode 31 - Penicillin Allergy", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/3G35ZApf8Dw36GQnL24TtI"}, {"title": "Antibiotics", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/2kw6qUWA3c3cHII12edsEf"}],
+  "Neuropharmacology": [{"title": "#Epi 101 - ICU Primary Snippet - Gabapentin", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/048HyfCsZrN0x9OjiYvelQ"}, {"title": "IBCC Episode 109 - Lithium Toxicity", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/1KvicjDCs7w5YzQSPSeZFZ"}, {"title": "#Epi 47 - ICU Primary - Bedside preparation Part 4", "show": "ICU Primary PrepCast", "url": "https://open.spotify.com/episode/1LvT1x6uKF7XZMoJPE5F3w"}, {"title": "IBCC Episode 10 - Delirium", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/6VK2ODK7KJis2EpD75gwdy"}],
+  "NSAIDs": [{"title": "Paracetamol mechanism, metabolism, toxicity", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/0DGL5ndNbYZ9XcwKnNWc1Z"}, {"title": "IBCC Episode 26 - Acetaminophen Toxicity", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/761rlzTJr6zZZ1SV9nC77e"}, {"title": "Prostaglandin effects on smooth muscle", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/3L8n1cvPu1T57PEmepIK33"}, {"title": "Scoliosis, Consent and Hypotension | Anaesthesia Final Exam Viva", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/1cvCGfFlQX0C9VNpTv3T1f"}],
+  "Obstetric pharmacology": [{"title": "IBCC Episode 30 - Pre-Eclampsia", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/2zh7LEf0cGHaIdAggU4WyY"}, {"title": "The placental transfer of oxygen explained in 4 easy steps!", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/5ri1P4b3hN1jej7uJZOHyK"}, {"title": "EP18 - Special Episode | Practice Viva with Ben", "show": "Count to 10", "url": "https://open.spotify.com/episode/0M5MmpMntHx9ZRqGlXlY9K"}],
+  "Pain": [{"title": "EP40 – Pain Physiology | Anaesthetic Primary Topic | Neurophysiology & Pain | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/2uPF3E5FScgw3cWTYdvAHP"}, {"title": "IBCC Episode 96 - Analgesia for the critically ill patient", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/77PV6O1vU1VCDKjrkuEytt"}, {"title": "Acute to chronic pain", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/5TQCNCD9hkeUfgwKZaaSlN"}, {"title": "The Medical Student Anaesthesia Prize Exam with Dr Max - analgesia, high BMI & deteriorating patients", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/6EJAw2LJHOW7NS1bMMKEdV"}],
+  "Respiratory pharmacology": [{"title": "IBCC Episode 95 - Inhaled Pulmonary Vasodilators", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/0ty539QSjn4Vts35YhxgTc"}, {"title": "Anaesthesia for Transgender Surgery Final Exam Viva", "show": "ABCs of Anaesthesia", "url": "https://open.spotify.com/episode/2YaTfhS3wKOUuZWqPNHbGx"}, {"title": "EP47 – Oxygen Production, Storage & Supply and Ventilators | Anaesthetic Primary Topic | Equipment & Safety | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6BJYySPdLu3Wvr1pbxrPhA"}],
+  "Anatomy": [{"title": "Neonatal airway anatomy", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/1v9YmfXsXiSSlc7c7N16pO"}, {"title": "Spinal cord perfusion", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/30fsFWo7L4xsW9up2coS07"}, {"title": "NMB at larynx, diaphragm, adductor pollicis", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/4HehwCTcpHCE5usbOQWiQt"}],
+  "Equipment & safety": [{"title": "EP50 – Suction & Scavenging, Electrical Safety & Diathermy | Anaesthetic Primary Topic | Equipment & Safety | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/0O0icbTTwMYpBjzFJvs3Hi"}, {"title": "EP47 – Oxygen Production, Storage & Supply and Ventilators | Anaesthetic Primary Topic | Equipment & Safety | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/6BJYySPdLu3Wvr1pbxrPhA"}, {"title": "EP52 – Ultrasound & Neuro-monitoring | Anaesthetic Primary Topic | Equipment & Safety | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/29QrDVWtqf6Ktm9qys5Bkj"}, {"title": "Electrical Safety", "show": "Anaestheasier", "url": "https://open.spotify.com/episode/2fTLfszT5O3CfI79koVWo5"}, {"title": "IBCC Episode 105 - Ventilator Associated Pneumonia", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/19jHcAbACGzO0iv6vwYf4h"}, {"title": "Ultrasound theory, technique and useful tips and tricks!", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/62YEu6STLqOtpn2cQbt1BW"}, {"title": "Circle breathing system", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/6Mey36PD3gpa0HzEMfONTM"}, {"title": "Safety features of vaporisers", "show": "ANZCA Part 1 SAQs", "url": "https://open.spotify.com/episode/0fDOtO7bfOh8wR9qjnhCpk"}],
+  "Integrated / miscellaneous": [{"title": "Viva practice with Luke - Suxamethonium, oxygen delivery to tissues, sodium nitroprusside, functions of the liver", "show": "Anaesthesia Coffee Break", "url": "https://open.spotify.com/episode/7cEfVxQfsuIP5ntjSgCM13"}, {"title": "EP43 – 30 Viva Stems with Maddie (Renton Prize Winner) | CT10", "show": "Count to 10", "url": "https://open.spotify.com/episode/7qCpVvkxCLmFokJ2EXRXXV"}, {"title": "IBCC Episode 74 - Toxic Alcohols", "show": "The IBCC Podcast", "url": "https://open.spotify.com/episode/4N8bmuPwhhbCQfYpw5A2Tt"}],
+};
+
+// ---- user-added episodes (baked into THIS file; portable across computers) ----
+// Loaded from the <script id="user-data"> block; written back into the file on Save.
+function loadUser(){ try{ return JSON.parse(document.getElementById('user-data').textContent) || {}; }catch(e){ return {}; } }
+let USER = loadUser();
+let dirty = false;
+const ALL_GROUPS = DATA.flatMap(d=>d.groups.map(x=>x.n));
+function userEps(group){ return USER[group] || []; }
+function addUserEp(group, title, url){
+  if(!USER[group]) USER[group] = [];
+  USER[group].push({title, url, show:"My addition", user:true});
+  dirty = true; render(); updateSaveBar();
+}
+function removeUserEp(group, idx){
+  if(USER[group]){ USER[group].splice(idx,1); if(!USER[group].length) delete USER[group];
+    dirty = true; render(); updateSaveBar(); }
+}
+function userCount(){ return Object.values(USER).reduce((a,v)=>a+v.length,0); }
+function updateSaveBar(){
+  const bar = document.getElementById('savebar');
+  const n = userCount();
+  document.getElementById('save-count').textContent =
+    n ? `${n} added episode${n>1?'s':''}${dirty?' · unsaved changes':''}` : 'No added episodes yet';
+  bar.classList.toggle('unsaved', dirty);
+}
+function downloadUpdated(){
+  // write current additions into the data block, escaping < to protect the script tag
+  document.getElementById('user-data').textContent = JSON.stringify(USER).replace(/</g,'\\u003c');
+  // temporarily clear runtime-generated DOM so the saved file matches the pristine template
+  const filters=document.getElementById('filters'), board=document.getElementById('board'), q=document.getElementById('q');
+  const fS=filters.innerHTML, bS=board.innerHTML, qS=q.value;
+  filters.innerHTML=''; board.innerHTML=''; q.value='';
+  const doc = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  filters.innerHTML=fS; board.innerHTML=bS; q.value=qS;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([doc],{type:'text/html'}));
+  a.download='anzca-primary-podcast-finder.html'; document.body.appendChild(a); a.click();
+  a.remove(); URL.revokeObjectURL(a.href);
+  dirty=false; updateSaveBar();
+}
+const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+
+const board = document.getElementById('board');
+const catList = DATA.map(d=>d.cat);
+let activeCat = "All";
+let query = "";
+
+// filter buttons
+const filtersEl = document.getElementById('filters');
+["All", ...catList].forEach(c=>{
+  const b=document.createElement('button');
+  b.textContent = c==="All" ? "All" : c.replace("Anatomy, Equipment & Misc","Anatomy · Equip · Misc");
+  b.dataset.cat=c;
+  b.setAttribute('aria-pressed', c==="All");
+  b.onclick=()=>{activeCat=c;[...filtersEl.children].forEach(x=>x.setAttribute('aria-pressed', x.dataset.cat===c));render();};
+  filtersEl.appendChild(b);
+});
+
+const playSvg = '<svg class="play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const goSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>';
+
+function cardHtml(g){
+  const seeds = (SEED_EPISODES[g.n] || []).map(e=>({...e, user:false}));
+  const users = userEps(g.n).map((e,i)=>({...e, user:true, idx:i}));
+  const all = seeds.concat(users);
+  const has = all.length>0;
+  const cls = "card" + (has ? " seed" : "");
+  const loChips = g.lo.map(l=>`<span class="lo">${l}</span>`).join("");
+  const epItems = all.map(e=>`
+      <li><a class="ep" href="${esc(e.url)}" target="_blank" rel="noopener">
+        ${playSvg}
+        <span class="body"><span class="t">${esc(e.title)}</span><span class="s">${e.user?'<span class=\'mine\'>Mine</span> · ':''}${esc(e.show)}</span></span>
+      </a>${e.user?`<button class="rm" data-g="${esc(g.n)}" data-i="${e.idx}" title="Remove">×</button>`:''}</li>`).join("");
+  const eps = has
+    ? `<ul class="eps">${epItems}</ul>`
+    : `<p class="none">No mapped episode yet — use Add episode or Search Spotify.</p>`;
+  const chips = CHIPS.map(sh=>`<a href="${searchUrl(g.q.replace(/ Count to 10$/,'')+' '+sh)}" target="_blank" rel="noopener">${sh}</a>`).join("");
+  return `<div class="card-wrap" data-group="${esc(g.n)}"><div class="${cls}">
+    <h3>${g.n}</h3>
+    <div class="meta">${loChips}</div>
+    <p class="focus">${g.focus}</p>
+    ${eps}
+    <div class="actions">
+      <div class="row1">
+        <a class="go" href="${searchUrl(g.q)}" target="_blank" rel="noopener">${goSvg} Search Spotify</a>
+      </div>
+      <div class="shows"><span class="lbl">in show:</span>${chips}</div>
+    </div>
+  </div></div>`;
+}
+
+// Parse an LO code like "BT_PO 1.79a" -> {prefix, key}. key orders major.minor.suffix.
+function parseLO(str){
+  const m = String(str).trim().match(/^([A-Za-z]{2,3}_[A-Za-z]{2})\s*(\d+)\.(\d+)([a-z]?)$/);
+  if(!m) return null;
+  const suf = m[4] ? (m[4].charCodeAt(0)-96) : 0;   // a->1 .. z->26
+  return { prefix:m[1].toUpperCase(), key: (+m[2])*1e6 + (+m[3])*1e3 + suf };
+}
+// Build a searchable index of LO singles/ranges from a group's display labels.
+function loIndex(g){
+  if(g._loIdx) return g._loIdx;
+  const idx = [];
+  g.lo.forEach(label=>{
+    const pm = label.match(/^([A-Za-z]{2,3}_[A-Za-z]{2})\s+(.+)$/);
+    if(!pm) return;
+    const prefix = pm[1].toUpperCase();
+    const parts = pm[2].split(/\s*[–-]\s*/);   // en-dash or hyphen
+    const a = parseLO(prefix+" "+parts[0]);
+    if(!a) return;
+    if(parts.length===2){
+      const b = parseLO(prefix+" "+parts[1]);
+      if(b) idx.push({prefix, start:a.key, end:b.key});
+    } else {
+      idx.push({prefix, start:a.key, end:a.key});
+    }
+  });
+  g._loIdx = idx; return idx;
+}
+function loMatch(g, q){
+  const ql = parseLO(q);
+  if(!ql) return null;                 // not an LO-style query
+  return loIndex(g).some(r => r.prefix===ql.prefix && ql.key>=r.start && ql.key<=r.end);
+}
+function matches(g){
+  if(!query) return true;
+  // If the query looks like an LO code, match by range across this group's LOs.
+  const lo = loMatch(g, query);
+  if(lo!==null) return lo;
+  const epText = (SEED_EPISODES[g.n]||[]).concat(userEps(g.n))
+                   .map(e=>e.title+" "+(e.show||"")).join(" ");
+  const hay = (g.n+" "+g.focus+" "+g.lo.join(" ")+" "+g.q+" "+epText).toLowerCase();
+  return query.toLowerCase().split(/\s+/).every(t=>hay.includes(t));
+}
+
+function render(){
+  board.innerHTML="";
+  let shown=0;
+  DATA.forEach((d,i)=>{
+    if(activeCat!=="All" && d.cat!==activeCat) return;
+    const gs = d.groups.filter(matches);
+    if(!gs.length) return;
+    shown+=gs.length;
+    const sec=document.createElement('section');
+    sec.className="cat";
+    sec.innerHTML=`<h2>${d.cat} <span class="n">${gs.length}</span></h2><div class="grid">${gs.map(cardHtml).join("")}</div>`;
+    board.appendChild(sec);
+  });
+  document.getElementById('empty').style.display = shown? "none":"block";
+  const total = DATA.reduce((a,d)=>a+d.groups.length,0);
+  document.getElementById('count').textContent = (query||activeCat!=="All") ? `${shown} of ${total} groups` : `${total} LO groups`;
+}
+
+document.getElementById('q').addEventListener('input', e=>{query=e.target.value.trim();render();});
+
+// delegated interactions (cards are re-rendered, so listen on the board)
+board.addEventListener('click', e=>{
+  const t = e.target;
+  const ep = t.closest && t.closest('a.ep');
+  if(ep){
+    const m = ep.getAttribute('href').match(/episode\/([A-Za-z0-9]+)/);
+    if(m){
+      e.preventDefault();
+      const web = ep.getAttribute('href');
+      const appUri = 'spotify:episode:' + m[1];
+      const started = Date.now();
+      // Try the Spotify app first…
+      window.location.href = appUri;
+      // …fall back to the web player if the app didn't take over.
+      setTimeout(()=>{ if(Date.now() - started < 1500) window.open(web, '_blank', 'noopener'); }, 1200);
+    }
+    return;
+  }
+  if(t.classList.contains('rm')){
+    removeUserEp(t.dataset.g, parseInt(t.dataset.i,10));
+  }
+});
+function cssEsc(s){ return (window.CSS && CSS.escape) ? CSS.escape(s) : s.replace(/["\\]/g,'\\$&'); }
+document.getElementById('save-file').addEventListener('click', downloadUpdated);
+
+// ---- global Add-episode form (bottom sheet) ----
+(function(){
+  const modal=document.getElementById('add-modal');
+  const sel=document.getElementById('ga-group');
+  sel.innerHTML = '<option value="" selected disabled>Select LO Group…</option>'
+    + ALL_GROUPS.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  const title=document.getElementById('ga-title'), url=document.getElementById('ga-url'), msg=document.getElementById('ga-msg');
+  const openBtn=document.getElementById('add-open');
+  function open(){ modal.hidden=false; requestAnimationFrame(()=>modal.classList.add('show'));
+    openBtn.setAttribute('aria-expanded','true'); setTimeout(()=>title.focus(),120); }
+  function close(){ modal.classList.remove('show'); openBtn.setAttribute('aria-expanded','false');
+    setTimeout(()=>{ modal.hidden=true; }, 220);
+    title.value=url.value=''; sel.value=''; msg.textContent=''; }
+  openBtn.addEventListener('click', ()=> modal.hidden ? open() : close());
+  document.getElementById('ga-cancel').addEventListener('click', close);
+  document.getElementById('sheet-backdrop').addEventListener('click', close);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !modal.hidden) close(); });
+  document.getElementById('ga-save').addEventListener('click', ()=>{
+    const t=title.value.trim(), u=url.value.trim(), g=sel.value;
+    if(!g){ msg.textContent="Pick an LO Group."; return; }
+    if(!t || !u){ msg.textContent="Enter a title and link."; return; }
+    if(!/^https?:\/\//i.test(u)){ msg.textContent="Link must start with http."; return; }
+    addUserEp(g, t, u); close(); scrollToGroup(g);
+  });
+})();
+
+function scrollToGroup(name){
+  requestAnimationFrame(()=>{
+    const el = board.querySelector(`.card-wrap[data-group="${cssEsc(name)}"]`);
+    if(el){ el.scrollIntoView({behavior:'smooth', block:'center'});
+      const card=el.querySelector('.card'); if(card){ card.classList.add('flash');
+        setTimeout(()=>card.classList.remove('flash'), 1600); } }
+  });
+}
+render();
+updateSaveBar();
+</script>
+</body>
+</html>
